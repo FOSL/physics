@@ -1,10 +1,10 @@
 include(SimpleFOSLProjectTest)
 
-find_package(FOSL
-	COMPONENTS
-		physics
-	REQUIRED
-)
+# find_package(FOSL
+# 	COMPONENTS
+# 		physics
+# 	REQUIRED
+# )
 
 project(unsorted)
 

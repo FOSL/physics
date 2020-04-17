@@ -20,12 +20,18 @@ if(FOSL_PHYSICS)
 	) # }}}
 	target_include_directories(${PROJECT_NAME} # {{{
 	) # }}}
+
+	find_package(FOSL # {{{
+		COMPONENTS
+			metaprogramming
+		REQUIRED
+	) # }}}
 	target_link_libraries(physics # {{{
 	) # }}}
 
 	# Testing {{{
 	if(${UPPERCASE_PROJECT_NAMESPACE}_${UPPERCASE_PROJECT_COMPONENT}_BUILD_TESTS)
-# 		add_test(NAME types COMMAND ${PROJECT_BINARY_DIR}/test/unit/types/main.elf)
+		add_test(NAME types COMMAND ${PROJECT_BINARY_DIR}/test/unit/unsorted/main.elf)
 		add_subdirectory(test)
 	endif() # }}}
 	# Installation {{{
