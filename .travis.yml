@@ -1,0 +1,119 @@
+language: cpp
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-5.0
+            - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-5.0 main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+        packages:
+            - bash
+            - gcc-8
+            - g++-8
+            - gcc-7
+            - g++-7
+            - cmake
+            - python3
+            - python3-pip
+    # coverity_scan:
+    #     project:
+    #         name: "FOSL/utility"
+    #         description: "Build submitted via Travis CI"
+    #     notification_email: martin.michalec.fosl@gmail.com
+    #     build_command_prepend: "cmake $(python3 ./../script/cmake_release_flags.py) -D ENABLE_COVERAGE:BOOL=TRUE . "
+    #     build_command:   "cmake --build . -- -j2"
+    #     branch_pattern: coverity_scan
+
+python:
+    - 3.7
+
+jobs:
+    include:
+        - os: linux
+          arch: amd64
+          dist: xenial
+          env: GCC_VER="7"
+          compiler: gcc
+        # - os: linux
+        #   arch: amd64
+        #   env: GCC_VER="6" CMAKE_OPTIONS="-D DYNLOAD_ENABLED:BOOL=FALSE -D MULTITHREAD_SUPPORT_ENABLED:BOOL=FALSE -D USE_STD_MAKE_SHARED:BOOL=TRUE" BUILD_ONLY=1
+        #   compiler: gcc
+        # - os: linux
+        #   arch: amd64
+        #   env: GCC_VER="7" # CPPCHECK=1 CMAKE_OPTIONS="-D RUN_FUZZY_TESTS:BOOL=TRUE"
+        #   compiler: gcc
+        - os: linux
+          arch: amd64
+          dist: xenial
+          env: GCC_VER="8" COVERAGE=1 # CPPCHECK=1 CMAKE_OPTIONS="-D RUN_FUZZY_TESTS:BOOL=TRUE"
+          compiler: gcc
+        - os: osx
+          arch: amd64
+          compiler: clang
+          osx_image: xcode10
+        # - os: osx
+        #   arch: amd64
+        #   compiler: clang
+        #   osx_image: xcode10
+        #   env: CLANG_VER="5.0" CMAKE_OPTIONS="-D DYNLOAD_ENABLED:BOOL=FALSE -D MULTITHREAD_SUPPORT_ENABLED:BOOL=FALSE -D USE_STD_MAKE_SHARED:BOOL=TRUE" BUILD_ONLY=1
+
+before_install:
+    - cd example
+
+    - if [ "${GCC_VER}" != "" ]; then
+        export CXX="g++-${GCC_VER}";
+        export CC="gcc-${GCC_VER}";
+        export GCOV="gcov-${GCC_VER}";
+      fi
+    - if [ "${CLANG_VER}" != "" ]; then
+          export CXX="clang++-${CLANG_VER}";
+      fi
+
+    - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
+        brew update;
+        brew install cmake;
+        brew upgrade cmake;
+        brew install llvm;
+      fi
+    - pip3 install --user --upgrade pip
+    - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+          sudo apt remove cmake;
+          sudo apt update -y --allow-unauthenticated;
+          sudo apt upgrade -y --allow-unauthenticated;
+          sudo apt autoremove;
+          pip3 install --user cmake;
+      fi
+    # - pip3 install --user cpp-coveralls
+
+script:
+    - mkdir build
+    - cd build
+
+    - if [[ "${COVERAGE}" == "1" ]]; then
+          export CMAKE_OPTIONS="${CMAKE_OPTIONS} -D ENABLE_COVERAGE:BOOL=TRUE";
+      fi
+
+    - cmake $(python3 ./../script/cmake_release_flags.py) ${CMAKE_OPTIONS} ..
+    - cmake --build . -- -j2
+
+    - if [ "${BUILD_ONLY}" != "1" ]; then ctest; fi
+    - if [ "${COVERAGE}" == "1" ]; then bash <(curl -s https://raw.githubusercontent.com/codecov/codecov-bash/master/codecov) -x $GCOV -a "-s `pwd`" ; fi
+
+    - cd ..
+
+# after_script:
+    # - if [ "${CPPCHECK}" == 1 ]; then ./script/runcppcheck.sh; fi
+
+notifications:
+  email:
+    recipients:
+      - martin.michalec.fosl@gmail.com
+    on_success: always
+    on_failure: always
+  # webhooks:
+  #   urls:
+  #     - https://webhooks.gitter.im/e/xxxxxxxxxxxxxxxxxxxx
+  #   on_success: change  # options: [always|never|change] default: always
+  #   on_failure: always  # options: [always|never|change] default: always
+  #   on_start: false     # default: false

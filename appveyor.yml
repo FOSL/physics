@@ -1,0 +1,13 @@
+image:
+    - Visual Studio 2017
+
+# clone_folder: c:\project\source
+
+before_build:
+    - cd example
+    - mkdir build
+
+build_script:
+    - cd build
+    - cmake $(python ./script/cmake_release_flags.py) -G "Visual Studio 15" ..
+    - cmake --build .
